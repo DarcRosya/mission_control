@@ -66,10 +66,14 @@ namespace Travelling
 
         public void SaveToFile(string filePath)
         {
-            string jsonString = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(filePath, jsonString);
+            string routeJson = JsonSerializer.Serialize(this.route);
+            string data = "{\n" +
+                  "  \"name\": \"" + this.name + "\",\n" +
+                  "  \"currentLocation\": \"" + this.currentLocation + "\",\n" +
+                  "  \"route\": " + routeJson + "\n" +
+                  "}";
+            File.WriteAllText(filePath, data);
         }
-
         public static Traveler LoadFromFile(string filePath)
         {
             if (!File.Exists(filePath))

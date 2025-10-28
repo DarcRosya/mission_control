@@ -54,9 +54,14 @@ namespace Travelling
 
         public List<string> FindShortestPath(string from, string to)
         {
+            if (from == to)
+            {
+                return new List<string> { from };
+            }
+
             var distances = new Dictionary<string, int>();
             var previous = new Dictionary<string, string>();
-            var priorityQueue = new PriorityQueue<string, int>();
+            var priorityQueue = new PriorityQueue<(string city, int priority), int>();
 
             foreach (var city in adjacencyList.Keys)
             {
@@ -69,16 +74,18 @@ namespace Travelling
             }
 
             distances[from] = 0;
-            priorityQueue.Enqueue(from, 0);
+            priorityQueue.Enqueue((from, 0), 0);
 
             while (priorityQueue.Count > 0)
             {
-                string currentCity = priorityQueue.Dequeue();
+                var (currentCity, currentPriority) = priorityQueue.Dequeue();
 
-                if (currentCity == to) break;   
+                if (currentPriority > distances[currentCity]) continue;
 
-                if (adjacencyList.TryGetValue(currentCity, out var neighbors)) 
-                {   
+                if (currentCity == to) break;
+
+                if (adjacencyList.TryGetValue(currentCity, out var neighbors))
+                {
                     foreach (var (neighborCity, distanceToNeighbor) in neighbors)
                     {
                         int newDistance = distances[currentCity] + distanceToNeighbor;
@@ -87,11 +94,12 @@ namespace Travelling
                         {
                             distances[neighborCity] = newDistance;
                             previous[neighborCity] = currentCity;
-                            priorityQueue.Enqueue(neighborCity, newDistance);
+                            priorityQueue.Enqueue((neighborCity, newDistance), newDistance);
                         }
                     }
                 }
             }
+
             if (!previous.ContainsKey(to))
             {
                 return null;
@@ -105,7 +113,6 @@ namespace Travelling
                 current = previous[current];
             }
             path.Add(from);
-
             path.Reverse();
             return path;
         }
