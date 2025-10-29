@@ -19,11 +19,11 @@ public partial class MainForm : Form
     private Button toggleRouteButton;
     private Traveler? loadedTraveler;
 
-    public MainForm()
-    {
-        InitializeComponent();
-        SetupForm();
-    }
+        public MainForm()
+        {
+            InitializeComponent();
+            SetupForm();
+        }
 
     private void SetupForm()
     {
@@ -397,18 +397,18 @@ public partial class MainForm : Form
                 }
             }
 
-            // using (RouteCalculationForm calcForm = new RouteCalculationForm(loadedTraveler, graph))
-            // {
-            //     if (calcForm.ShowDialog() == DialogResult.OK)
-            //     {
-            //         if (loadedTraveler.route != null && loadedTraveler.route.Count > 0)
-            //         {
-            //             routeTextBox.Text = loadedTraveler.GetRoute();
-            //             routePanel.Visible = true;
-            //             toggleRouteButton.Text = "Hide Route";
-            //         }
-            //     }
-            // }
+            using (CalculateForm calcForm = new CalculateForm(loadedTraveler, graph))
+            {
+                if (calcForm.ShowDialog() == DialogResult.OK)
+                {
+                    if (loadedTraveler.route != null && loadedTraveler.route.Count > 0)
+                    {
+                        routeTextBox.Text = loadedTraveler.GetRoute();
+                        routePanel.Visible = true;
+                        toggleRouteButton.Text = "Hide Route";
+                    }
+                }
+            }
         }
         catch (Exception ex)
         {
