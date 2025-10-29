@@ -3,7 +3,7 @@ using Travelling;
 using System;
 using System.Windows.Forms;
 
-public partial class Form1 : Form
+public partial class MainForm : Form
 {
     private TextBox nameTextBox;
     private TextBox cityTextBox;
@@ -19,7 +19,7 @@ public partial class Form1 : Form
     private Button toggleRouteButton;
     private Traveler? loadedTraveler;
 
-    public Form1()
+    public MainForm()
     {
         InitializeComponent();
         SetupForm();
@@ -397,8 +397,18 @@ public partial class Form1 : Form
                 }
             }
 
-            // Then I have to do that my data passed to the another form and when something updates in it (Maybe)
-            // I should change my data in main form or only after closing the new one
+            // using (RouteCalculationForm calcForm = new RouteCalculationForm(loadedTraveler, graph))
+            // {
+            //     if (calcForm.ShowDialog() == DialogResult.OK)
+            //     {
+            //         if (loadedTraveler.route != null && loadedTraveler.route.Count > 0)
+            //         {
+            //             routeTextBox.Text = loadedTraveler.GetRoute();
+            //             routePanel.Visible = true;
+            //             toggleRouteButton.Text = "Hide Route";
+            //         }
+            //     }
+            // }
         }
         catch (Exception ex)
         {
