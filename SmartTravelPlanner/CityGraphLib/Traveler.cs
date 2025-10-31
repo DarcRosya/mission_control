@@ -167,5 +167,14 @@ namespace Travelling
         {
             return $"Traveler: {_name} | Location: {_currentLocation} | Route: {GetRoute()}";
         }
+
+        public string GetLastStop()
+        {
+            if (route.Count > 0)
+            {
+                return route[route.Count - 1];
+            }
+            return null;
+        }
     }
 }

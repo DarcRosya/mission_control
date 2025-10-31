@@ -4,6 +4,7 @@ using System;
 using System.IO;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using System.Drawing;
 
 public partial class CalculateForm : Form
 {
@@ -17,10 +18,14 @@ public partial class CalculateForm : Form
     private Label? planResultLabel;
 
     private ListBox? routeListBox;
+    private ListBox? citiesListBox;
     private Button? saveRouteButton;
     private Button? loadRouteButton;
     private Button? clearRouteButton;
     private Button? exitButton;
+
+    private Button? okButton;
+    private Button? cancelButton;
 
     private List<string>? currentPath;
 
@@ -29,54 +34,111 @@ public partial class CalculateForm : Form
         this.traveler = traveler;
         this.graph = cityGraph;
         SetupForm();
+        PopulateCities();
+
+        // --- Add form closing event handler ---
+        this.FormClosing += CalculateForm_FormClosing;
     }
+
     private void SetupForm()
     {
         this.Text = "Traveler Planner";
-        this.Size = new System.Drawing.Size(1100, 700);
+        this.Size = new System.Drawing.Size(1280, 720);
+        this.StartPosition = FormStartPosition.CenterScreen;
+        this.Font = new Font("Segoe UI", 11);
 
-        FlowLayoutPanel mainPanel = new FlowLayoutPanel();
-        mainPanel.FlowDirection = FlowDirection.TopDown;
-        mainPanel.Dock = DockStyle.Fill;
-        mainPanel.Padding = new Padding(12);
-        mainPanel.AutoScroll = true;
+        FlowLayoutPanel mainPanel = new FlowLayoutPanel
+        {
+            FlowDirection = FlowDirection.TopDown,
+            Dock = DockStyle.Fill,
+            Padding = new Padding(12),
+            AutoScroll = true
+        };
 
-        // Traveler input row
-        FlowLayoutPanel travelerPanel = new FlowLayoutPanel();
-        travelerPanel.FlowDirection = FlowDirection.LeftToRight;
-        travelerPanel.AutoSize = true;
+        // --- Traveler info ---
+        travelerInfoTextBox = new TextBox()
+        {
+            ReadOnly = true,
+            Width = 800,
+            Multiline = true,
+            Height = 48,
+            Text = traveler?.ToString() ?? string.Empty,
+            Margin = new Padding(0, 6, 0, 0)
+        };
 
-        // Single traveler info textbox (shows name and current location)
-        travelerInfoTextBox = new TextBox() { ReadOnly = true, Width = 600, Multiline = true, Height = 48 };
-        travelerInfoTextBox.Text = traveler?.ToString() ?? string.Empty;
-        travelerInfoTextBox.Margin = new Padding(0, 6, 0, 0);
-        travelerPanel.Controls.Add(travelerInfoTextBox);
+        // --- Destination input ---
+        FlowLayoutPanel planPanel = new FlowLayoutPanel()
+        {
+            FlowDirection = FlowDirection.LeftToRight,
+            AutoSize = true
+        };
 
-        // Destination / Plan row
-        FlowLayoutPanel planPanel = new FlowLayoutPanel() { FlowDirection = FlowDirection.LeftToRight, AutoSize = true };
-        Label destLabel = new Label() { Text = "Destination:", AutoSize = true, Margin = new Padding(0,6,6,0) };
-        destinationTextBox = new TextBox() { Width = 220 };
-        planButton = new Button() { Text = "Plan Route", AutoSize = true, Margin = new Padding(12,0,0,0) };
+        Label destLabel = new Label()
+        {
+            Text = "Destination:",
+            AutoSize = true,
+            Margin = new Padding(0, 6, 6, 0)
+        };
+
+        destinationTextBox = new TextBox() { Width = 250 };
+        planButton = new Button()
+        {
+            Text = "Plan Route",
+            AutoSize = true,
+            Margin = new Padding(12, 0, 0, 0)
+        };
         planButton.Click += PlanButton_Click;
-        planResultLabel = new Label() { AutoSize = true, Margin = new Padding(12,6,0,0) };
+
+        planResultLabel = new Label()
+        {
+            AutoSize = true,
+            Margin = new Padding(12, 6, 0, 0)
+        };
+
         planPanel.Controls.Add(destLabel);
         planPanel.Controls.Add(destinationTextBox);
         planPanel.Controls.Add(planButton);
         planPanel.Controls.Add(planResultLabel);
 
-        // Route list and actions
-        FlowLayoutPanel contentPanel = new FlowLayoutPanel() { FlowDirection = FlowDirection.LeftToRight, AutoSize = true };
+        // --- Content area: cities list + route + actions ---
+        FlowLayoutPanel contentPanel = new FlowLayoutPanel()
+        {
+            FlowDirection = FlowDirection.LeftToRight,
+            AutoSize = true
+        };
 
-        routeListBox = new ListBox() { Width = 420, Height = 360, Margin = new Padding(0,6,12,0) };
+        // Доступные города
+        citiesListBox = new ListBox()
+        {
+            Width = 280,
+            Height = 480,
+            Margin = new Padding(0, 6, 12, 0)
+        };
+        citiesListBox.SelectedIndexChanged += CitiesListBox_SelectedIndexChanged;
 
-        FlowLayoutPanel actionsPanel = new FlowLayoutPanel() { FlowDirection = FlowDirection.TopDown, AutoSize = true };
-        saveRouteButton = new Button() { Text = "Save Route", AutoSize = true, Margin = new Padding(0,0,0,6) };
+        // Маршрут
+        routeListBox = new ListBox()
+        {
+            Width = 420,
+            Height = 480,
+            Margin = new Padding(0, 6, 12, 0)
+        };
+
+        // Кнопки справа
+        FlowLayoutPanel actionsPanel = new FlowLayoutPanel()
+        {
+            FlowDirection = FlowDirection.TopDown,
+            AutoSize = true
+        };
+
+        saveRouteButton = new Button() { Text = "Save Route", AutoSize = true };
+        loadRouteButton = new Button() { Text = "Load Route", AutoSize = true };
+        clearRouteButton = new Button() { Text = "Clear Route", AutoSize = true };
+        exitButton = new Button() { Text = "Exit", AutoSize = true, Margin = new Padding(0, 20, 0, 0) };
+
         saveRouteButton.Click += SaveRouteButton_Click;
-        loadRouteButton = new Button() { Text = "Load Route", AutoSize = true, Margin = new Padding(0,0,0,6) };
         loadRouteButton.Click += LoadRouteButton_Click;
-        clearRouteButton = new Button() { Text = "Clear Route", AutoSize = true, Margin = new Padding(0,0,0,6) };
         clearRouteButton.Click += ClearRouteButton_Click;
-        exitButton = new Button() { Text = "Exit", AutoSize = true, Margin = new Padding(0,20,0,0) };
         exitButton.Click += ExitButton_Click;
 
         actionsPanel.Controls.Add(saveRouteButton);
@@ -84,18 +146,66 @@ public partial class CalculateForm : Form
         actionsPanel.Controls.Add(clearRouteButton);
         actionsPanel.Controls.Add(exitButton);
 
+        contentPanel.Controls.Add(citiesListBox);
         contentPanel.Controls.Add(routeListBox);
         contentPanel.Controls.Add(actionsPanel);
 
-        // Add everything to main panel
-        mainPanel.Controls.Add(travelerPanel);
+        // --- Bottom OK/Cancel buttons ---
+        FlowLayoutPanel bottomPanel = new FlowLayoutPanel()
+        {
+            FlowDirection = FlowDirection.RightToLeft,
+            Dock = DockStyle.Bottom,
+            Padding = new Padding(12),
+            AutoSize = true
+        };
+
+        okButton = new Button()
+        {
+            Text = "OK",
+            DialogResult = DialogResult.OK,
+            AutoSize = true,
+            Margin = new Padding(6, 0, 0, 0)
+        };
+
+        cancelButton = new Button()
+        {
+            Text = "Cancel",
+            DialogResult = DialogResult.Cancel,
+            AutoSize = true
+        };
+
+        bottomPanel.Controls.Add(okButton);
+        bottomPanel.Controls.Add(cancelButton);
+
+        this.Controls.Add(bottomPanel);
+
+        // Устанавливаем Accept/Cancel кнопки для Enter/Esc
+        this.AcceptButton = okButton;
+        this.CancelButton = cancelButton;
+
+        // --- Add all to main panel ---
+        mainPanel.Controls.Add(travelerInfoTextBox);
         mainPanel.Controls.Add(planPanel);
         mainPanel.Controls.Add(contentPanel);
 
         this.Controls.Add(mainPanel);
-    }
-    // Removed Submit button - traveler info is shown in the readonly info textbox
 
+        //CalculateForm_firstRoute();
+    }
+
+    private void PopulateCities()
+    {
+        if (graph == null || citiesListBox == null) return;
+        citiesListBox.Items.Clear();
+        foreach (var city in graph.GetCities())
+            citiesListBox.Items.Add(city);
+    }
+
+    private void CitiesListBox_SelectedIndexChanged(object? sender, EventArgs e)
+    {
+        if (citiesListBox?.SelectedItem != null)
+            destinationTextBox!.Text = citiesListBox.SelectedItem.ToString()!;
+    }
 
     private void PlanButton_Click(object? sender, EventArgs e)
     {
@@ -122,13 +232,16 @@ public partial class CalculateForm : Form
 
         currentPath = path;
         routeListBox?.Items.Clear();
+        traveler?.ClearRoute();
         foreach (var city in path)
         {
             routeListBox?.Items.Add(city);
+            traveler.AddCity(city);
         }
+        travelerInfoTextBox!.Text = traveler.ToString();
 
         int distance = graph.GetPathDistance(path);
-        if (planResultLabel != null) planResultLabel.Text = $"Total distance: {distance}";
+        planResultLabel!.Text = $"Total distance: {distance} km";
     }
 
     private void SaveRouteButton_Click(object? sender, EventArgs e)
@@ -140,7 +253,7 @@ public partial class CalculateForm : Form
         }
 
         using SaveFileDialog sfd = new SaveFileDialog();
-        sfd.Filter = "Route file|*.txt|Text file|*.txt|All|*.*";
+        sfd.Filter = "Route file|*.txt|All files|*.*";
         if (sfd.ShowDialog() != DialogResult.OK) return;
 
         try
@@ -157,7 +270,7 @@ public partial class CalculateForm : Form
     private void LoadRouteButton_Click(object? sender, EventArgs e)
     {
         using OpenFileDialog ofd = new OpenFileDialog();
-        ofd.Filter = "Route file|*.route.txt|Text file|*.txt|All|*.*";
+        ofd.Filter = "Route file|*.txt|All files|*.*";
         if (ofd.ShowDialog() != DialogResult.OK) return;
 
         try
@@ -165,16 +278,13 @@ public partial class CalculateForm : Form
             var lines = File.ReadAllLines(ofd.FileName);
             currentPath = new List<string>(lines);
             routeListBox?.Items.Clear();
-            foreach (var city in currentPath) routeListBox?.Items.Add(city);
+            foreach (var city in currentPath)
+                routeListBox?.Items.Add(city);
 
             if (graph != null)
             {
                 int d = graph.GetPathDistance(currentPath);
-                if (planResultLabel != null) planResultLabel.Text = $"Total distance: {d}";
-            }
-            else
-            {
-                MessageBox.Show("Graph data is not available to calculate distance.", "Warning", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                planResultLabel!.Text = $"Total distance: {d} km";
             }
         }
         catch (Exception ex)
@@ -185,9 +295,12 @@ public partial class CalculateForm : Form
 
     private void ClearRouteButton_Click(object? sender, EventArgs e)
     {
+        traveler?.ClearRoute();
+        travelerInfoTextBox!.Text = traveler.ToString();
         currentPath = null;
         routeListBox?.Items.Clear();
-        if (planResultLabel != null) planResultLabel.Text = string.Empty;
+        destinationTextBox!.Clear();
+        planResultLabel!.Text = string.Empty;
     }
 
     private void ExitButton_Click(object? sender, EventArgs e)
@@ -195,5 +308,36 @@ public partial class CalculateForm : Form
         this.Close();
     }
 
-    
+    // --- Confirm closing form ---
+    private void CalculateForm_FormClosing(object? sender, FormClosingEventArgs e)
+    {
+        // Ask confirmation if user pressed Cancel or tried to close via X
+        if (this.DialogResult != DialogResult.OK)
+        {
+            DialogResult result = MessageBox.Show(
+                "Are you sure you want to close the route calculation form?\nUnsaved changes may be lost.",
+                "Confirm Close",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question);
+
+            if (result == DialogResult.No)
+            {
+                e.Cancel = true; // Keep the form open
+            }
+        }
+    }
+
+    // private void CalculateForm_firstRoute()
+    // {
+    //     String destCity = traveler.GetLastStop() ?? string.Empty;
+    //     //System.Diagnostics.Debug.WriteLine("First route to: " + destCity);
+    //     if (!string.IsNullOrEmpty(destCity))
+    //     {
+    //         citiesListBox.SelectedIndex = citiesListBox.FindStringExact(destCity);
+    //         destinationTextBox.Text = destCity;
+    //         PlanButton_Click(this, EventArgs.Empty);
+
+    //     }
+    // }
+
 }

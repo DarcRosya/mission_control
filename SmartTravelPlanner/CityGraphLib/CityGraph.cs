@@ -160,5 +160,11 @@ namespace Travelling
         {
             return string.Join("\n", _outputLines).TrimEnd('\n');
         }
+
+        public List<string> GetCities()
+{
+    return adjacencyList.Keys.ToList();
+}
+
     }
 }
