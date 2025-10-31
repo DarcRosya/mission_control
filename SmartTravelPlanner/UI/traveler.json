@@ -1,5 +1,4 @@
 {
   "name": "Alice",
-  "currentLocation": "Kyiv",
   "route": ["Lviv","Warsaw", "Kharkiv"]
 }

@@ -3,13 +3,14 @@ using System.IO;
 using System.Text.Json;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.Json.Serialization;
 
 namespace Travelling
 {
     public class Traveler : ICloneable
     {
         private string _name;
-        private string _currentLocation = "";
+        private string _currentLocation;
         private List<string> _route;
 
         public string name
@@ -31,7 +32,8 @@ namespace Travelling
         public Traveler(string name)
         {
             _name = name;
-            _route = [];
+            _currentLocation = string.Empty;
+            _route = new List<string>();
         }
 
         public string this[int index] => _route[index];
@@ -74,24 +76,40 @@ namespace Travelling
                   "}";
             File.WriteAllText(filePath, data);
         }
+
         public static Traveler LoadFromFile(string filePath)
         {
             if (!File.Exists(filePath))
             {
-                throw new FileNotFoundException();
+                throw new FileNotFoundException("File not found");
             }
             string jsonString = File.ReadAllText(filePath);
+
+            var options = new JsonSerializerOptions
+            {
+                UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow 
+            };
 
             Traveler traveler;
 
             try
             {
-                traveler = JsonSerializer.Deserialize<Traveler>(jsonString);
+                traveler = JsonSerializer.Deserialize<Traveler>(jsonString, options);
             }
             catch (JsonException)
             {
                 throw new FileLoadException("Invalid travel data");
             }
+
+            if (traveler == null)
+                throw new FileLoadException("Traveler data is empty or could not be read.");
+
+            if (string.IsNullOrWhiteSpace(traveler.name))
+                throw new FileLoadException("Missing required field: 'name'.");
+
+            traveler.currentLocation ??= string.Empty;
+
+            traveler.route ??= new List<string>();
 
             return traveler;
         }
