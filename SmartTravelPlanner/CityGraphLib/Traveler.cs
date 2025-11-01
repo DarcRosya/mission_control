@@ -70,10 +70,11 @@ namespace Travelling
         {
             string routeJson = JsonSerializer.Serialize(this.route);
             string data = "{\n" +
-                  "  \"name\": \"" + this.name + "\",\n" +
-                  "  \"currentLocation\": \"" + this.currentLocation + "\",\n" +
-                  "  \"route\": " + routeJson + "\n" +
-                  "}";
+                "  \"name\": \"" + this.name + "\",\n" +
+                "  \"currentLocation\": " + 
+                    (string.IsNullOrEmpty(this.currentLocation) ? "null" : JsonSerializer.Serialize(this.currentLocation)) + ",\n" +
+                "  \"route\": " + routeJson + "\n" +
+                "}";
             File.WriteAllText(filePath, data);
         }
 

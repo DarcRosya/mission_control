@@ -22,7 +22,7 @@ public partial class CalculateForm : Form
 
     private ListBox? routeListBox;
     private ListBox? citiesListBox;
-    private Button? saveRouteButton;
+    private Button? saveTravelerButton;
     private Button? loadRouteButton;
     private Button? clearRouteButton;
     private Button? exitButton;
@@ -134,16 +134,13 @@ public partial class CalculateForm : Form
             AutoSize = true
         };
 
-        saveRouteButton = new Button() { Text = "Save Route", AutoSize = true };
-        loadRouteButton = new Button() { Text = "Load Route", AutoSize = true };
+        saveTravelerButton = new Button() { Text = "Save Traveler data", AutoSize = true };
         clearRouteButton = new Button() { Text = "Clear Route", AutoSize = true };
 
-        saveRouteButton.Click += SaveRouteButton_Click;
-        loadRouteButton.Click += LoadRouteButton_Click;
+        saveTravelerButton.Click += SaveTravelerButton_Click;
         clearRouteButton.Click += ClearRouteButton_Click;
 
-        actionsPanel.Controls.Add(saveRouteButton);
-        actionsPanel.Controls.Add(loadRouteButton);
+        actionsPanel.Controls.Add(saveTravelerButton);
         actionsPanel.Controls.Add(clearRouteButton);
 
         contentPanel.Controls.Add(citiesListBox);
@@ -190,7 +187,7 @@ public partial class CalculateForm : Form
 
         this.Controls.Add(mainPanel);
 
-        //CalculateForm_firstRoute();
+        // CalculateForm_firstRoute();
     }
 
     private void PopulateCities()
@@ -244,52 +241,19 @@ public partial class CalculateForm : Form
         planResultLabel!.Text = $"Total distance: {distance} km";
     }
 
-    private void SaveRouteButton_Click(object? sender, EventArgs e)
+    private void SaveTravelerButton_Click(object sender, EventArgs e)
     {
-        if (currentPath == null || currentPath.Count == 0)
-        {
-            DialogHelper.ShowInfo("No route to save");
+        if (!FileHelper.TrySaveTravelerJson(out string jsonPath))
             return;
-        }
-
-        using SaveFileDialog sfd = new SaveFileDialog();
-        sfd.Filter = "Route file|*.txt|All files|*.*";
-        if (sfd.ShowDialog() != DialogResult.OK) return;
 
         try
         {
-            File.WriteAllLines(sfd.FileName, currentPath);
-            DialogHelper.ShowInfo("Route saved");
+            traveler.SaveToFile(jsonPath);
+            DialogHelper.ShowInfo("Traveler data saved successfully!", "Success");
         }
         catch (Exception ex)
         {
-            DialogHelper.ShowError($"Failed to save route: {ex.Message}");
-        }
-    }
-
-    private void LoadRouteButton_Click(object? sender, EventArgs e)
-    {
-        using OpenFileDialog ofd = new OpenFileDialog();
-        ofd.Filter = "Route file|*.txt|All files|*.*";
-        if (ofd.ShowDialog() != DialogResult.OK) return;
-
-        try
-        {
-            var lines = File.ReadAllLines(ofd.FileName);
-            currentPath = new List<string>(lines);
-            routeListBox?.Items.Clear();
-            foreach (var city in currentPath)
-                routeListBox?.Items.Add(city);
-
-            if (graph != null)
-            {
-                int d = graph.GetPathDistance(currentPath);
-                planResultLabel!.Text = $"Total distance: {d} km";
-            }
-        }
-        catch (Exception ex)
-        {
-            DialogHelper.ShowError($"Failed to load route: {ex.Message}");
+            DialogHelper.ShowError($"Error saving file: {ex.Message}");
         }
     }
 
@@ -299,7 +263,6 @@ public partial class CalculateForm : Form
         travelerInfoTextBox!.Text = traveler.ToString();
         currentPath = null;
         routeListBox?.Items.Clear();
-        // destinationTextBox!.Clear(); ----- DELETED
         planResultLabel!.Text = string.Empty;
     }
 
