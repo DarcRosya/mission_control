@@ -16,7 +16,9 @@ public partial class MainForm : Form
     private TextBox mapTextBox;
     private Button mapSelectButton;
     private Button loadTravelerButton;
-    private Button saveJsonButton;
+    private Button saveTravelerButton;
+    private Button createTravelerButton;
+    private bool isTravelerCreatedManually = false;
     private Traveler? loadedTraveler;
     private Button calculateRouteButton;
     private TableLayoutPanel routePanel;
@@ -100,11 +102,11 @@ public partial class MainForm : Form
         loadTravelerButton = new Button { Text = "Load traveler data via JSON", Dock = DockStyle.Fill, Height = 50 };
         loadTravelerButton.Click += LoadJsonButton_Click;
 
-        saveJsonButton = new Button { Text = "Save traveler data to JSON", Dock = DockStyle.Fill, Height = 50 };
-        saveJsonButton.Click += SaveJsonButton_Click;
+        saveTravelerButton = new Button { Text = "Save traveler data to JSON", Dock = DockStyle.Fill, Height = 50 };
+        saveTravelerButton.Click += SaveJsonButton_Click;
 
         panel.Controls.Add(loadTravelerButton, 0, 0);
-        panel.Controls.Add(saveJsonButton, 1, 0);
+        panel.Controls.Add(saveTravelerButton, 1, 0);
 
         return panel;
     }
@@ -117,6 +119,7 @@ public partial class MainForm : Form
         try
         {
             loadedTraveler = Traveler.LoadFromFile(jsonPath);
+            isTravelerCreatedManually = false;
 
             nameTextBox.Text = loadedTraveler.GetName();
 
@@ -365,8 +368,8 @@ public partial class MainForm : Form
         }
     }
 
-// ----------------------------------------------------------------------------------------
-// ----------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------
+    // ----------------------------------------------------------------------------------------
 
     private void PlaceControls(TableLayoutPanel table, TableLayoutPanel jsonPanel, TableLayoutPanel mapPanel, TableLayoutPanel routePanel)
     {
@@ -409,9 +412,34 @@ public partial class MainForm : Form
         table.Controls.Add(new Label { Text = "Map file (.txt):", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill }, 0, 5);
         table.Controls.Add(mapPanel, 1, 5);
 
-        calculateRouteButton = new Button { Text = "Calculate Route", Dock = DockStyle.Fill, Enabled = false };
+        var actionPanel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 2
+        };
+        actionPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+        actionPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50f));
+
+        createTravelerButton = new Button
+        {
+            Text = "Create Traveler",
+            Dock = DockStyle.Fill,
+            BackColor = Color.LightGray
+        };
+        createTravelerButton.Click += CreateTravelerButton_Click;
+
+        calculateRouteButton = new Button
+        {
+            Text = "Calculate Route",
+            Dock = DockStyle.Fill,
+            Enabled = false
+        };
         calculateRouteButton.Click += CalculateRouteButton_Click;
-        table.Controls.Add(calculateRouteButton, 1, 6);
+
+        actionPanel.Controls.Add(createTravelerButton, 0, 0);
+        actionPanel.Controls.Add(calculateRouteButton, 1, 0);
+
+        table.Controls.Add(actionPanel, 1, 6);
 
         Button exitButton = new Button
         {
@@ -425,6 +453,48 @@ public partial class MainForm : Form
         };
         table.Controls.Add(exitButton, 1, 8);
     }
+    
+    private async void CreateTravelerButton_Click(object sender, EventArgs e)
+    {
+        string name = nameTextBox.Text.Trim();
+        string city = GetValidCityText(cityTextBox.Text);
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            DialogHelper.ShowWarning("Please enter a Name first!");
+            return;
+        }
+
+        loadedTraveler = new Traveler(name);
+
+        isTravelerCreatedManually = true;
+
+        if (!string.IsNullOrWhiteSpace(city))
+            loadedTraveler.SetLocation(city);
+
+        if (!string.IsNullOrWhiteSpace(routeTextBox.Text))
+        {
+            var cities = routeTextBox.Text.Split(new[] { "->" }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (var c in cities)
+            {
+                loadedTraveler.AddCity(c.Trim());
+            }
+        }
+
+        var originalText = createTravelerButton.Text;
+        var originalColor = createTravelerButton.BackColor;
+
+        createTravelerButton.Text = "Traveler Created!";
+        createTravelerButton.BackColor = Color.LightGreen;
+        createTravelerButton.Enabled = false;
+
+        await Task.Delay(3000);
+
+        createTravelerButton.Text = originalText;
+        createTravelerButton.BackColor = originalColor;
+        createTravelerButton.Enabled = true;
+    }
+
 
     private void ToggleRouteButton_Click(object sender, EventArgs e)
     {
@@ -434,6 +504,11 @@ public partial class MainForm : Form
 
     private void CalculateRouteButton_Click(object sender, EventArgs e)
     {
+        if (!isTravelerCreatedManually)
+        {
+            DialogHelper.ShowWarning("Please create a traveler first using the 'Create Traveler' button!");
+            return;
+        }
         string name = nameTextBox.Text.Trim();
         string city = GetValidCityText(cityTextBox.Text);
         string mapFile = mapTextBox.Text.Trim();
