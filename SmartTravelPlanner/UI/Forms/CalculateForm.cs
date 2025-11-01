@@ -1,5 +1,8 @@
 namespace UI;
+
 using Travelling;
+using UI.Helpers;
+
 using System;
 using System.IO;
 using System.Collections.Generic;
@@ -42,7 +45,7 @@ public partial class CalculateForm : Form
 
     private void SetupForm()
     {
-        this.Text = "Traveler Planner";
+        this.Text = "Smart Travel Planner";
         this.Size = new System.Drawing.Size(1280, 720);
         this.StartPosition = FormStartPosition.CenterScreen;
         this.Font = new Font("Segoe UI", 11);
@@ -134,17 +137,14 @@ public partial class CalculateForm : Form
         saveRouteButton = new Button() { Text = "Save Route", AutoSize = true };
         loadRouteButton = new Button() { Text = "Load Route", AutoSize = true };
         clearRouteButton = new Button() { Text = "Clear Route", AutoSize = true };
-        exitButton = new Button() { Text = "Exit", AutoSize = true, Margin = new Padding(0, 20, 0, 0) };
 
         saveRouteButton.Click += SaveRouteButton_Click;
         loadRouteButton.Click += LoadRouteButton_Click;
         clearRouteButton.Click += ClearRouteButton_Click;
-        exitButton.Click += ExitButton_Click;
 
         actionsPanel.Controls.Add(saveRouteButton);
         actionsPanel.Controls.Add(loadRouteButton);
         actionsPanel.Controls.Add(clearRouteButton);
-        actionsPanel.Controls.Add(exitButton);
 
         contentPanel.Controls.Add(citiesListBox);
         contentPanel.Controls.Add(routeListBox);
@@ -214,19 +214,19 @@ public partial class CalculateForm : Form
 
         if (graph == null)
         {
-            MessageBox.Show("Graph data is not available.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            DialogHelper.ShowError("Graph data is not available");
             return;
         }
         if (string.IsNullOrEmpty(origin) || string.IsNullOrEmpty(dest))
         {
-            MessageBox.Show("Please enter both origin and destination.", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            DialogHelper.ShowError("Please enter both origin and destination");
             return;
         }
 
         var path = graph.FindShortestPath(origin, dest);
         if (path == null || path.Count == 0)
         {
-            MessageBox.Show("No route found between the selected cities.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            DialogHelper.ShowInfo("No route found between the selected cities");
             return;
         }
 
@@ -248,7 +248,7 @@ public partial class CalculateForm : Form
     {
         if (currentPath == null || currentPath.Count == 0)
         {
-            MessageBox.Show("No route to save.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            DialogHelper.ShowInfo("No route to save");
             return;
         }
 
@@ -259,11 +259,11 @@ public partial class CalculateForm : Form
         try
         {
             File.WriteAllLines(sfd.FileName, currentPath);
-            MessageBox.Show("Route saved.", "Info", MessageBoxButtons.OK, MessageBoxIcon.Information);
+            DialogHelper.ShowInfo("Route saved");
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Failed to save route: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            DialogHelper.ShowError($"Failed to save route: {ex.Message}");
         }
     }
 
@@ -289,7 +289,7 @@ public partial class CalculateForm : Form
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"Failed to load route: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            DialogHelper.ShowError($"Failed to load route: {ex.Message}");
         }
     }
 
@@ -299,13 +299,8 @@ public partial class CalculateForm : Form
         travelerInfoTextBox!.Text = traveler.ToString();
         currentPath = null;
         routeListBox?.Items.Clear();
-        destinationTextBox!.Clear();
+        // destinationTextBox!.Clear(); ----- DELETED
         planResultLabel!.Text = string.Empty;
-    }
-
-    private void ExitButton_Click(object? sender, EventArgs e)
-    {
-        this.Close();
     }
 
     // --- Confirm closing form ---

@@ -162,9 +162,8 @@ namespace Travelling
         }
 
         public List<string> GetCities()
-{
-    return adjacencyList.Keys.ToList();
-}
-
+        {
+            return adjacencyList.Keys.ToList();
+        }
     }
 }

@@ -64,7 +64,7 @@ public partial class MainForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(20),
             AutoSize = true,
-            RowCount = 7,
+            RowCount = 8,
             ColumnCount = 3
         };
 
@@ -77,6 +77,8 @@ public partial class MainForm : Form
         table.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
         table.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
         table.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
+        table.RowStyles.Add(new RowStyle(SizeType.Absolute, 200));
         table.RowStyles.Add(new RowStyle(SizeType.Absolute, 50));
 
         return table;
@@ -138,7 +140,7 @@ public partial class MainForm : Form
         }
         catch (FileNotFoundException)
         {
-            DialogHelper.ShowError("File not found.");
+            DialogHelper.ShowError("File not found");
         }
         catch (FileLoadException ex)
         {
@@ -146,7 +148,7 @@ public partial class MainForm : Form
         }
         catch (JsonException)
         {
-            DialogHelper.ShowError("Invalid JSON format.");
+            DialogHelper.ShowError("Invalid JSON format");
         }
         catch (Exception ex)
         {
@@ -160,7 +162,7 @@ public partial class MainForm : Form
             string name = nameTextBox.Text.Trim();
             if (string.IsNullOrEmpty(name))
             {
-                DialogHelper.ShowWarning("Cannot save empty traveler data!\nPlease fill in at least the Name field.", "Empty Traveler Data");
+                DialogHelper.ShowWarning("Cannot save empty traveler data!\nPlease fill in at least the Name field", "Empty Traveler Data");
                 return;
             }
             loadedTraveler = new Traveler(name);
@@ -410,6 +412,18 @@ public partial class MainForm : Form
         calculateRouteButton = new Button { Text = "Calculate Route", Dock = DockStyle.Fill, Enabled = false };
         calculateRouteButton.Click += CalculateRouteButton_Click;
         table.Controls.Add(calculateRouteButton, 1, 6);
+
+        Button exitButton = new Button
+        {
+            Text = "Exit",
+            Dock = DockStyle.Fill,
+            Height = 40,
+        };
+        exitButton.Click += (s, e) =>
+        {
+            this.Close();
+        };
+        table.Controls.Add(exitButton, 1, 8);
     }
 
     private void ToggleRouteButton_Click(object sender, EventArgs e)
