@@ -509,6 +509,12 @@ public partial class MainForm : Form
             DialogHelper.ShowWarning("Please create a traveler first using the 'Create Traveler' button!");
             return;
         }
+        if(!ValidateCityGraphFile(mapTextBox.Text))
+        {
+            DialogHelper.ShowError("The selected map file is invalid. Please correct the file and try again.");
+            return;
+        }
+
         string name = nameTextBox.Text.Trim();
         string city = GetValidCityText(cityTextBox.Text);
         string mapFile = mapTextBox.Text.Trim();
@@ -593,4 +599,58 @@ public partial class MainForm : Form
 
         return string.Empty;
     }
+
+    private static bool ValidateCityGraphFile(string filePath)
+{
+    string[] lines = File.ReadAllLines(filePath);
+    HashSet<string> seenRoutes = new HashSet<string>();
+
+        foreach (string rawLine in lines)
+        {
+            string line = rawLine.Trim();
+
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                //throw new InvalidDataException("File contains empty or whitespace line.");
+                return false;
+            }
+
+            string[] parts = line.Split(',');
+            if (parts.Length != 2) {
+                //throw new InvalidDataException($"Invalid line format (missing comma): '{line}'");
+                return false;
+            }
+
+            string[] cities = parts[0].Split('-');
+            if (cities.Length != 2) {
+                //throw new InvalidDataException($"Invalid city pair format (expected 'CityA-CityB'): '{line}'");
+                return false;
+            }
+
+            string cityA = cities[0].Trim();
+            string cityB = cities[1].Trim();
+            if (string.IsNullOrEmpty(cityA) || string.IsNullOrEmpty(cityB)) {
+                //throw new InvalidDataException($"One of the city names is empty: '{line}'");
+                return false;
+            }
+
+            if (!int.TryParse(parts[1].Trim(), out int distance) || distance <= 0) {
+                //throw new InvalidDataException($"Invalid distance value: '{line}'");
+                return false;
+            }
+
+            // Detect duplicates (case-insensitive, ignoring order)
+            string routeKey = string.Compare(cityA, cityB, StringComparison.OrdinalIgnoreCase) < 0
+                ? $"{cityA}-{cityB}".ToLower()
+                : $"{cityB}-{cityA}".ToLower();
+
+            if (!seenRoutes.Add(routeKey))
+            {
+                //throw new InvalidDataException($"Duplicate route detected: {cityA}-{cityB}");
+                return false;
+            }
+        }
+    return true;
+}
+
 }
