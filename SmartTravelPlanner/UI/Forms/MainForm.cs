@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using System.Diagnostics.CodeAnalysis;
 using System.Net;
 using System.Text.Json;
+using System.Globalization;
 
 public partial class MainForm : Form
 {
@@ -26,6 +27,14 @@ public partial class MainForm : Form
     private TextBox routeTextBox;
     private Button toggleRouteButton;
 
+    private static string FormatName(string city)
+    {
+        if (string.IsNullOrWhiteSpace(city))
+            return string.Empty;
+
+        TextInfo textInfo = CultureInfo.InvariantCulture.TextInfo;
+        return textInfo.ToTitleCase(city.ToLowerInvariant());
+    }
     public MainForm()
     {
         InitializeComponent();
@@ -160,23 +169,28 @@ public partial class MainForm : Form
     }
     private void SaveJsonButton_Click(object sender, EventArgs e)
     {
-        if (loadedTraveler is null)
-        {
-            string name = nameTextBox.Text.Trim();
-            if (string.IsNullOrEmpty(name))
-            {
-                DialogHelper.ShowWarning("Cannot save empty traveler data!\nPlease fill in at least the Name field", "Empty Traveler Data");
-                return;
-            }
-            loadedTraveler = new Traveler(name);
-            string cityText = GetValidCityText(cityTextBox.Text);
-            loadedTraveler.SetLocation(cityText);
-        }
+        string name = nameTextBox.Text.Trim();
+        string city = GetValidCityText(cityTextBox.Text, true);
 
-        if (string.IsNullOrEmpty(loadedTraveler.GetName()))
+        if (string.IsNullOrEmpty(name))
         {
             DialogHelper.ShowWarning("Cannot save traveler without a name!", "Invalid Data");
             return;
+        }
+
+        if (loadedTraveler is null)
+        {
+            loadedTraveler = new Traveler(name);
+            loadedTraveler.SetLocation(city);
+        }
+
+        bool nameChanged = !string.Equals(loadedTraveler.GetName(), name, StringComparison.Ordinal);
+        bool cityChanged = !string.Equals(loadedTraveler.GetLocation(), city, StringComparison.Ordinal);
+
+        if (nameChanged || cityChanged)
+        {
+            if (!HandleTravelerChanges(nameChanged, cityChanged, name, city))
+                return;
         }
 
         if (!FileHelper.TrySaveTravelerJson(out string jsonPath))
@@ -191,6 +205,42 @@ public partial class MainForm : Form
         {
             DialogHelper.ShowError($"Error saving file: {ex.Message}");
         }
+    }
+    
+    private bool HandleTravelerChanges(bool nameChanged, bool cityChanged, string newName, string newCity)
+    {
+        string message = cityChanged && nameChanged
+            ? "You changed 'Name' and 'Start City' but didn't click \"Create Traveler\".\nUse new parameters?"
+            : nameChanged
+                ? "You changed 'Name' but didn't click \"Create Traveler\".\nUse new Name?"
+                : "You changed 'Start City' but didn't click \"Create Traveler\".\nUse new Start City?";
+
+        if (!DialogHelper.Confirm(message))
+        {
+            if (nameChanged)
+                nameTextBox.Text = loadedTraveler.name;
+
+            if (cityChanged)
+            {
+                string oldCity = loadedTraveler.GetLocation();
+                if (string.IsNullOrEmpty(oldCity))
+                {
+                    cityTextBox.Text = "Leave empty to use the first city from the route (Click \"Create Traveler\" button)";
+                    cityTextBox.ForeColor = Color.DarkGray;
+                }
+                else
+                    cityTextBox.Text = oldCity;
+            }
+            return false;
+        }
+
+        if (nameChanged)
+            loadedTraveler.name = newName;
+
+        if (cityChanged)
+            loadedTraveler.SetLocation(newCity);
+
+        return true;
     }
 
 // ----------------------------------------------------------------------------------------
@@ -324,7 +374,7 @@ public partial class MainForm : Form
                 if (loadedTraveler is null)
                 {
                     string name = nameTextBox.Text.Trim();
-                    string city = cityTextBox.Text.Trim();
+                    string city = GetValidCityText(cityTextBox.Text.Trim(), true);
 
                     if (string.IsNullOrEmpty(name))
                     {
@@ -380,12 +430,12 @@ public partial class MainForm : Form
         table.Controls.Add(new Label { Text = "Start city *?:", TextAlign = ContentAlignment.MiddleLeft, Dock = DockStyle.Fill, ForeColor = Color.DarkGoldenrod }, 0, 1);
         cityTextBox = new TextBox { Dock = DockStyle.Fill };
 
-        cityTextBox.Text = "Leave empty to use the first city from the route";
+        cityTextBox.Text = "Leave empty to use the first city from the route (Click \"Create Traveler\" button)";
         cityTextBox.ForeColor = Color.DarkGray;
 
         cityTextBox.GotFocus += (s, e) =>
         {
-            if (cityTextBox.Text == "Leave empty to use the first city from the route")
+            if (cityTextBox.Text == "Leave empty to use the first city from the route (Click \"Create Traveler\" button)")
             {
                 cityTextBox.Text = "";
                 cityTextBox.ForeColor = Color.Black;
@@ -395,7 +445,7 @@ public partial class MainForm : Form
         {
             if (string.IsNullOrWhiteSpace(cityTextBox.Text))
             {
-                cityTextBox.Text = "Leave empty to use the first city from the route";
+                cityTextBox.Text = "Leave empty to use the first city from the route (Click \"Create Traveler\" button)";
                 cityTextBox.ForeColor = Color.DarkGray;
             }
         };
@@ -457,13 +507,14 @@ public partial class MainForm : Form
     private async void CreateTravelerButton_Click(object sender, EventArgs e)
     {
         string name = nameTextBox.Text.Trim();
-        string city = GetValidCityText(cityTextBox.Text);
 
         if (string.IsNullOrWhiteSpace(name))
         {
             DialogHelper.ShowWarning("Please enter a Name first!");
             return;
         }
+
+        string city = GetValidCityText(cityTextBox.Text, true);
 
         loadedTraveler = new Traveler(name);
 
@@ -506,11 +557,11 @@ public partial class MainForm : Form
     {
         if (!isTravelerCreatedManually)
         {
-            DialogHelper.ShowWarning("Please create a traveler first using the 'Create Traveler' button!");
+            DialogHelper.ShowWarning("Please create a traveler first using the \"Create Traveler\" button!");
             return;
         }
         string name = nameTextBox.Text.Trim();
-        string city = GetValidCityText(cityTextBox.Text);
+        string city = GetValidCityText(cityTextBox.Text, true);
         string mapFile = mapTextBox.Text.Trim();
 
         if (!ValidateInputs(name, city, mapFile))
@@ -575,22 +626,33 @@ public partial class MainForm : Form
 
         return true;
     }
-    private string GetValidCityText(string cityText)
+
+    private string GetValidCityText(string cityText, bool updateUI = false)
     {
-        if (cityText == "Leave empty to use the first city from the route")
+        if (cityText == "Leave empty to use the first city from the route (Click \"Create Traveler\" button)")
             cityText = string.Empty;
 
         if (!string.IsNullOrWhiteSpace(cityText))
-        return cityText.Trim();
-
-        if (loadedTraveler?.route != null && loadedTraveler.route.Count > 0)
         {
-            string firstCity = loadedTraveler.route[0];
-            cityTextBox.Text = firstCity;
-            cityTextBox.ForeColor = Color.Black;
-            return firstCity;
+            string formatted = FormatName(cityText.Trim());
+
+            if (updateUI)
+            {
+                cityTextBox.Text = formatted;
+                cityTextBox.ForeColor = Color.Black;
+            }
+
+            return formatted;
         }
 
-        return string.Empty;
+        string firstCity = loadedTraveler?.route?.FirstOrDefault() ?? string.Empty;
+
+        if (updateUI && !string.IsNullOrEmpty(firstCity))
+        {
+            cityTextBox.Text = firstCity;
+            cityTextBox.ForeColor = Color.Black;
+        }
+
+        return firstCity;
     }
 }
