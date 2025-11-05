@@ -1,8 +1,0 @@
-Kyiv-Lviv,540
-Lviv-Warsaw,390
-Kyiv-Odessa,480
-Kyiv-Dnipro,300
-Dnipro-Lviv,600
-Dnipro-Nikopol,250
-Dnipro-Marhanets,270
-Nikopol-Marhanets,20
